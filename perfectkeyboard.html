@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Non-Latin Keyboard</title>
+    <style>
+        #text-display {
+            font-size: 24px;
+            border: 1px solid #ccc;
+            padding: 50px;
+            margin-top: 20px;
+            white-space: pre-wrap; /* To display newline characters */
+            outline: none; /* Remove the outline when focused */
+            cursor: text; /* Set cursor to text when focused */
+            font-family: noto nastaliq urdu;
+            width: 70vw;
+            height: 30vh;
+            overflow: auto; /* Show scrollbars when needed */
+            /* scrollbar-width: none; Hide the scrollbar width */
+}
+
+/* #text-display::-webkit-scrollbar {
+    width: 0;  For Chrome, Safari, and Opera 
+} */
+
+
+@media print {
+        h1, p, button, input {
+            display: none;
+        }
+        #text-display{
+          border: none;
+          box-sizing: border-box;
+          padding: 30px;
+          margin: 0;
+          width: 100%;
+          height: 100%;
+          
+          
+        }
+    }
+    </style>
+</head>
+<body>
+    <h1>Cashmere Keyboard</h1>
+    <p>Press keys on your keyboard to type.</p>
+    <div lang="ks" dir="rtl" id="text-display" contenteditable="true"> </div>
+    <button id="undoButton">Undo</button>
+<button id="redoButton">Redo</button>
+<button id="boldButton" onclick="toggleBold()">Bold</button>
+<button id="saveButton">Save as a .txt file</button>
+<button id="openButton">Open a .txt file</button>
+<button id="printButton" onclick="PrintText()">Print/Download as pdf</button>
+<button id="alignRightButton" onclick="alignText('right')">Align Right</button>
+<button id="alignLeftButton" onclick="alignText('left')">Align Left</button>
+<button id="alignCenterButton" onclick="alignText('Center')">Align Center</button>
+<button id="alignJustifyButton" onclick="alignText('justify')">Align Justify</button>
+<button id="changeDirButton" onclick="changeDirection()">Change Direction</button>
+<input type="file" id="fileInput" style="display: none;">
+<script>
+        // Define a mapping of Latin characters to non-Latin characters
+        const nonLatinMapping = {
+            'a': 'ا', 'b': 'ب', 'p': 'پ', 't': 'ت', 'j': 'ج', 'c': 'چ', 'd': 'د', 'r': 'ر', 'z': 'ز', 's': 'س', 'x': 'ش', 'q': 'ط', 'k': 'ک', 'g': 'گ', 'l': 'ل', 'm': 'م', 'n': 'ن', 'w': 'و', 'h': 'ھ', 'o': 'ہ', 'v': 'ٚ', 'e': 'ٔ', 'u': 'ُ', 'i': 'ِ', 'y': 'ی', '.': '۔', 'f': 'ٕ', ',': '،', ';': '؛', '/': '/', '1': '۱', '2': '۲', '3': '۳', '4': '۴', '5': '۵', '6': '۶', '7': '۷', '8': '۸', '9': '۹', '0': '۰', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', '': '', // Example: Latin 'a' maps to the non-Latin character 'あ'
+            // Add more mappings as needed
+        };
+
+        // Define a mapping of Shift + Latin characters to non-Latin characters
+        const shiftNonLatinMapping = {
+            'A': 'َ', 'V': 'ٛ', 'E': 'ٲ', 'U': 'ٗ',  'I': 'ٖ', 'T': 'ٹ', 'H': 'ح', 'X': 'خ', 'D': 'ڈ', 'R': 'ڑ', 'C': 'ژ', 'S': 'ص', 'Z': 'ذ', 'Q': 'ظ', 'P': 'ف', 'K': 'ق', 'G': 'غ', 'F': 'ٟ', 'N': 'ں', 'J': 'ؠ', 'Y': 'ے', 'W': 'ۄ', 'L': 'ض', 'O': 'ع', 'M': 'ث', 'B': 'آ', // Example: Shift + Latin 'A' maps to the non-Latin character 'あ'
+            // Add more mappings as needed
+        };
+
+        // Function to handle key down event
+        function onKeyDown(event) {
+            const keyPressed = event.key;
+            const isLetterOrNumber = /^[a-zA-Z0-9]$/.test(keyPressed);
+            const ctrlKey = event.ctrlKey || event.metaKey; // Check if Ctrl or Command key is pressed
+            const zKey = event.key === 'z';
+            const shiftKey = event.shiftKey; // Check if Shift key is pressed
+            const notToBeReturned = [',', '.', '/', ' ', ';'];
+            if (!isLetterOrNumber &&  notToBeReturned.every(key => key !== keyPressed)/**&& !ctrlKey && !shiftKey && keyPressed !== 'Backspace' && keyPressed !== 'Enter'**/) {
+                // Allow default behavior for non-letter and non-number keys
+                return;
+            }
+            
+           else if (ctrlKey && zKey) {
+    event.preventDefault(); // Prevent the default undo behavior
+    
+  }
+    //         const isBackspace = keyPressed === 'Backspace';
+    //         const isEditableDiv = event.target.id === 'text-display';
+    //         if (isEditableDiv && isBackspace) {
+    //     // Prevent backspace only when the target is the editable div
+    //     event.preventDefault();
+    //     // deleteCharacterBeforeCursor();
+    // }
+
+            /**if (keyPressed === 'Backspace') {
+                event.preventDefault();
+                deleteCharacterBeforeCursor();
+            } else if (keyPressed === 'Enter') {
+                event.preventDefault();
+                insertNewLine();
+            } else**/ else if (!ctrlKey && !shiftKey && !isArrowKey(keyPressed)) {
+                event.preventDefault();
+                const newText = convertLatinToNonLatin(keyPressed);
+                insertTextAtCursor(newText);
+            }
+            
+            else if (shiftKey && isLetterOrNumber) {
+                event.preventDefault();
+                const newText = convertShiftLatinToNonLatin(keyPressed);
+                insertTextAtCursor(newText);
+            }
+           
+           
+        };
+
+
+
+function PrintText() {
+  window.print();
+}   
+
+function alignText(alignment) {
+    const textDisplay = document.getElementById("text-display");
+    textDisplay.style.textAlign = alignment;
+}
+
+function changeDirection() {
+            const textDisplay = document.getElementById("text-display");
+            const currentDir = textDisplay.dir;
+            if (currentDir === "rtl") {
+                textDisplay.dir = "ltr"; // Change direction to left-to-right
+            } else {
+                textDisplay.dir = "rtl"; // Change direction to right-to-left
+            }
+        }
+
+        
+        // Define an array of colors with their RGB values
+        const colors = [
+            { name: "Red", rgb: "rgb(255, 0, 0)" },
+            { name: "Blue", rgb: "rgb(0, 0, 255)" },
+            { name: "Green", rgb: "rgb(0, 128, 0)" },
+            { name: "Orange", rgb: "rgb(255, 165, 0)" },
+            { name: "Purple", rgb: "rgb(128, 0, 128)" }
+        ];
+
+        
+
+
+
+
+
+
+
+
+        
+//         const undoButton = document.getElementById('undoButton');
+// const redoButton = document.getElementById('redoButton');
+// const editor = document.getElementById('text-display');
+// const history = {
+//   back: [],
+//   forward: []
+// };
+
+// function performAction(command) {
+//   if (
+//     !history.back.length ||
+//     history.back[history.back.length - 1] != editor.innerHTML
+//   ) {
+//     history.back.push(editor.innerHTML);
+//   }
+//   document.execCommand(command, false, null);
+//   editor.focus();
+// }
+// undoButton.addEventListener("click", function () {
+//   if (!history.back.length) {
+//     return;
+//   }
+//   history.forward.push(editor.innerHTML);
+//   editor.innerHTML = history.back.pop();
+//   editor.focus();
+// });
+// redoButton.addEventListener("click", function () {
+//   if (!history.forward.length) {
+//     return;
+//   }
+
+//   history.back.push(editor.innerHTML);
+//   editor.innerHTML = history.forward.pop();
+//   editor.focus();
+// });
+// editor.addEventListener("keydown", function () {
+//   history.forward.length = [];
+//   history.back.push(editor.innerHTML);
+// });
+// editor.addEventListener("keydown", function(event) {
+//     const ctrlKey = event.ctrlKey || event.metaKey; // Check if Ctrl or Command key is pressed
+//     const zKey = event.key === 'z'; // Check if the pressed key is 'z'
+
+//     if (ctrlKey && zKey) {
+//         event.preventDefault(); // Prevent the default undo behavior
+        
+//     }
+  
+// });
+
+
+
+
+
+
+
+const undoButton = document.getElementById('undoButton');
+const redoButton = document.getElementById('redoButton');
+const editor = document.getElementById('text-display');
+const history = {
+  back: [],
+  forward: []
+};
+
+function performAction(command) {
+  if (
+    !history.back.length ||
+    history.back[history.back.length - 1].content !== editor.innerHTML
+  ) {
+    history.back.push({
+      content: editor.innerHTML,
+      cursorPos: getCaretPosition(editor)
+    });
+  }
+  document.execCommand(command, false, null);
+  editor.focus();
+}
+
+function setCaretPosition(el, pos) {
+  const range = document.createRange();
+  const sel = window.getSelection();
+  range.setStart(el.childNodes[0], pos);
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+function getCaretPosition(el) {
+  const sel = window.getSelection();
+  if (sel.getRangeAt && sel.rangeCount) {
+    const range = sel.getRangeAt(0);
+    const preCaretRange = range.cloneRange();
+    preCaretRange.selectNodeContents(el);
+    preCaretRange.setEnd(range.endContainer, range.endOffset);
+    return preCaretRange.toString().length;
+  }
+  return 0;
+}
+
+undoButton.addEventListener("click", function () {
+  if (!history.back.length) {
+    return;
+  }
+  history.forward.push({
+    content: editor.innerHTML,
+    cursorPos: getCaretPosition(editor)
+  });
+  const state = history.back.pop();
+  editor.innerHTML = state.content;
+  setCaretPosition(editor, state.cursorPos);
+  editor.focus();
+});
+
+redoButton.addEventListener("click", function () {
+  if (!history.forward.length) {
+    return;
+  }
+  history.back.push({
+    content: editor.innerHTML,
+    cursorPos: getCaretPosition(editor)
+  });
+  const state = history.forward.pop();
+  editor.innerHTML = state.content;
+  setCaretPosition(editor, state.cursorPos);
+  editor.focus();
+});
+
+editor.addEventListener("keydown", function () {
+    // Check if the pressed key is a isControlKey (Ctrl, Shift, Alt, CapsLock, Tab)
+    const isControlKey = event.ctrlKey || event.shiftKey || event.altKey || event.getModifierState('CapsLock') || event.key === 'Tab';
+
+    if (!isControlKey) {
+// Only update the history if the pressed key is not a isControlKey    
+  history.forward.length = [];
+  history.back.push({
+    content: editor.innerHTML,
+    cursorPos: getCaretPosition(editor)})
+    }
+}
+)
+
+
+
+        
+
+
+
+
+
+        
+        // Function to convert Latin characters to non-Latin characters
+        function convertLatinToNonLatin(keyPressed) {
+            return nonLatinMapping[keyPressed.toLowerCase()] || keyPressed;
+        }
+
+        // Function to convert Shift + Latin characters to non-Latin characters
+        function convertShiftLatinToNonLatin(keyPressed) {
+            return shiftNonLatinMapping[keyPressed] || keyPressed;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+        // Function to delete the character before the cursor
+        // function deleteCharacterBeforeCursor() {
+        //     const selection = window.getSelection();
+        //     const range = selection.getRangeAt(0);
+        //     if (!range.collapsed) {
+        //         range.deleteContents();
+        //     } else if (range.startOffset > 0) {
+        //         range.setStart(range.startContainer, range.startOffset - 1);
+        //         range.deleteContents();
+        //     }
+        // }
+
+        // Function to insert a newline
+        function insertNewLine() {
+            const selection = window.getSelection();
+            const range = selection.getRangeAt(0);
+            const br = document.createElement('br');
+            range.insertNode(br);
+            range.setStartAfter(br);
+            range.setEndAfter(br);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+
+        // Function to insert text at the cursor position
+        function insertTextAtCursor(text) {
+    const textDisplay = document.getElementById("text-display");
+    const selection = window.getSelection();
+    const range = selection.getRangeAt(0);
+
+    // Check if the selection is within the text display div
+    if (textDisplay.contains(range.commonAncestorContainer)) {
+        range.deleteContents();
+        const textNode = document.createTextNode(text);
+        range.insertNode(textNode);
+        range.setStartAfter(textNode);
+        range.setEndAfter(textNode);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+}
+
+
+        // Function to check if the pressed key is an arrow key
+        function isArrowKey(key) {
+            return key.startsWith('Arrow');
+        }
+
+        // Add event listener for key down
+        document.addEventListener("keydown", onKeyDown);
+
+        // Add event listener for paste event on the text display div
+document.getElementById("text-display").addEventListener("paste", function(event) {
+    // Prevent the default paste behavior
+    event.preventDefault();
+
+    // Get the pasted text content
+    const pastedText = (event.originalEvent || event).clipboardData.getData('text/plain');
+
+    // Insert the pasted text at the current cursor position
+    insertTextAtCursor(pastedText);
+});
+// // Function to toggle bold formatting for selected text
+// function toggleBold() {
+//             const selection = window.getSelection();
+//             const range = selection.getRangeAt(0);
+//             const span = document.createElement('span');
+//             span.style.fontWeight = range.commonAncestorContainer.parentNode.style.fontWeight === 'bold' ? 'normal' : 'bold';
+//             range.surroundContents(span);
+//         }
+
+//         // Add event listener for bold button
+//         document.getElementById("boldButton").addEventListener("click", function() {
+//             toggleBold(); // Toggle bold formatting
+//         });
+
+
+function toggleBold() {
+  const textElement = document.getElementById("text-display");
+  
+  // Get the computed style of the text element
+  const computedStyle = window.getComputedStyle(textElement);
+  
+  // Check if the font weight is normal
+  if (computedStyle.fontWeight === '400' || computedStyle.fontWeight === 'normal') {
+    textElement.style.fontWeight = "bold";
+  } else {
+    textElement.style.fontWeight = "normal";
+  }
+}
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          // Function to save the content of the editable div to a file
+          function saveContent() {
+            const content = document.getElementById('text-display').innerHTML;
+            const blob = new Blob([content], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+
+            // Create a link element and trigger a click event to download the file
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'text-content.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            // Revoke the URL to release memory
+            URL.revokeObjectURL(url);
+        }
+
+        
+
+        // Add event listener for save button
+        document.getElementById("saveButton").addEventListener("click", function() {
+            saveContent(); // Save the content
+        });
+
+
+
+
+// Function to open the saved file
+function openFile() {
+            const fileInput = document.getElementById('fileInput');
+            fileInput.click();
+        }
+
+        // Function to handle file selection and display its content
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                const content = event.target.result;
+                document.getElementById('text-display').innerHTML = content;
+            };
+
+            reader.readAsText(file);
+        }
+
+        
+
+        // Add event listener for open button
+        document.getElementById("openButton").addEventListener("click", function() {
+            openFile(); // Open the saved file
+        });
+
+        // Add event listener for file input change
+        document.getElementById("fileInput").addEventListener("change", handleFileSelect);
+
+
+
+
+
+
+
+    </script>
+</body>
+</html>
